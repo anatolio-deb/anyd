@@ -38,7 +38,6 @@ class Server(Listener):
     def __init__(self, listening_address, core: ModuleType):
         super().__init__(listening_address)
         self.core = inspect.getmembers(core, predicate=inspect.isfunction)
-        self.listening_address = listening_address
 
     def start(self):
         while True:
