@@ -1,16 +1,15 @@
-from multiprocessing.connection import Client as ConnectionClient, Listener
+from multiprocessing.connection import Client as __Client, Listener
 import time
 from types import ModuleType, FunctionType
 import inspect
 from contextlib import contextmanager
-# from multiprocessing import Process
 
 SIGEND = b"SIGEND"
 
 
 @contextmanager
-def Client(*args, **kwargs):
-    client = ClientBase(*args, **kwargs)
+def Client(server_address):
+    client = _Client(server_address)
     try:
         yield client
     finally:
@@ -24,7 +23,7 @@ def Client(*args, **kwargs):
 def receive(address):
     while True:
         try:
-            with ConnectionClient(address) as conn:
+            with __Client(address) as conn:
                 response = conn.recv()
         except ConnectionRefusedError:
             time.sleep(0.1)
@@ -63,7 +62,7 @@ class Server(Listener):
                     break
 
 
-class ClientBase(Listener):
+class _Client(Listener):
     def __init__(self, server_address):
         self.local_address = receive(server_address)
         super().__init__(self.local_address)
