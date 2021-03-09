@@ -34,7 +34,7 @@ sockets-framework startserver
 Finally, you can query your server using a `Client`:
 
 ```bash
-from sockets-framework.core import Client
+from sockets_framework.core import Client
 
 with Client() as call:
     response = call.commit("hello", "world")
