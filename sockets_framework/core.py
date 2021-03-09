@@ -5,6 +5,7 @@ import inspect
 from contextlib import contextmanager
 
 SIGEND = b"SIGEND"
+_client = None
 
 
 @contextmanager
@@ -64,8 +65,12 @@ class Server(Listener):
 
 class _Client(Listener):
     def __init__(self, server_address):
-        self.local_address = receive(server_address)
-        super().__init__(self.local_address)
+        global _client
+        if not _client:
+            self.local_address = receive(server_address)
+            super().__init__(self.local_address)
+        else:
+            self = _client
 
     def commit(self, core_function: str, *args, **kwargs):
         request = (core_function, args, kwargs)
