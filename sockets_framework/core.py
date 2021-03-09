@@ -10,13 +10,15 @@ _client = None
 
 @contextmanager
 def Client(server_address):
-    client = _Client(server_address)
+    global _client
+    if not _client:
+        _client = _Client(server_address)
     try:
-        yield client
+        yield _client
     finally:
-        response = client.commit(SIGEND)
+        response = _client.commit(SIGEND)
         if response == SIGEND:
-            del client
+            _client = None
         else:
             raise RuntimeError("The session is not closed propery")
 
@@ -65,12 +67,8 @@ class Server(Listener):
 
 class _Client(Listener):
     def __init__(self, server_address):
-        global _client
-        if not _client:
-            self.local_address = receive(server_address)
-            super().__init__(self.local_address)
-        else:
-            self = _client
+        self.local_address = receive(server_address)
+        super().__init__(self.local_address)
 
     def commit(self, core_function: str, *args, **kwargs):
         request = (core_function, args, kwargs)
