@@ -3,27 +3,13 @@ import time
 from types import ModuleType, FunctionType
 import inspect
 from contextlib import contextmanager
+from typing import Any
 
 SIGEND = b"SIGEND"
 _client = None
 
 
-@contextmanager
-def Client(server_address):
-    global _client
-    if not _client:
-        _client = _Client(server_address)
-    try:
-        yield _client
-    finally:
-        response = _client.commit(SIGEND)
-        if response == SIGEND:
-            _client = None
-        else:
-            raise RuntimeError("The session is not closed propery")
-
-
-def receive(address):
+def receive(address: str or tuple) -> Any:
     while True:
         try:
             with __Client(address) as conn:
@@ -35,11 +21,12 @@ def receive(address):
 
 
 class Server(Listener):
-    def __init__(self, listening_address, core: ModuleType):
+    def __init__(self, listening_address: str or tuple,
+                 core: ModuleType) -> None:
         super().__init__(listening_address)
         self.core = inspect.getmembers(core, predicate=inspect.isfunction)
 
-    def start(self):
+    def start(self) -> None:
         while True:
             with self.accept() as conn:
                 conn.send(self.last_accepted)
@@ -65,11 +52,11 @@ class Server(Listener):
 
 
 class _Client(Listener):
-    def __init__(self, server_address):
+    def __init__(self, server_address) -> None:
         self.local_address = receive(server_address)
         super().__init__(self.local_address)
 
-    def commit(self, core_function: str, *args, **kwargs):
+    def commit(self, core_function: str, *args, **kwargs) -> Any:
         request = (core_function, args, kwargs)
         with self.accept() as conn:
             conn.send(request)
@@ -79,3 +66,18 @@ class _Client(Listener):
         if isinstance(response, NotImplementedError):
             raise response
         return response
+
+
+@contextmanager
+def Client(server_address: str or tuple) -> _Client:
+    global _client
+    if not _client:
+        _client = _Client(server_address)
+    try:
+        yield _client
+    finally:
+        response = _client.commit(SIGEND)
+        if response == SIGEND:
+            _client = None
+        else:
+            raise RuntimeError("The session is not closed propery")
