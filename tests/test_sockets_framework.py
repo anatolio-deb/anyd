@@ -5,16 +5,22 @@ from multiprocessing import Process
 
 
 class TesClass01(unittest.TestCase):
+    """Sockets Framework IPC.
+    """
     test_address = ("localhost", 3000)
     test_server = Server(test_address, test_core)
 
     @classmethod
     def setUpClass(cls) -> None:
+        """Starts the Server in a separate process.
+        """
         cls.test_server_process = Process(target=cls.test_server.start)
         cls.test_server_process.start()
 
     @classmethod
     def tearDownClass(cls) -> None:
+        """Closes the server socket, then terminates the process.
+        """
         cls.test_server.close()
         cls.test_server_process.terminate()
 
