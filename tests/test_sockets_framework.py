@@ -38,6 +38,8 @@ class TesClass01(unittest.TestCase):
                 call.commit("unknown_function", "echo")
 
     def test_case04(self):
+        """Multiple requests.
+        """
         with Client(self.test_address) as call:
             response = call.commit("test_function", "echo_one")
             self.assertEqual(response, "echo_one")
