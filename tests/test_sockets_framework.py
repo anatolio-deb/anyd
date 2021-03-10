@@ -1,53 +1,81 @@
-from sockets_framework.core import Client, Server
-import unittest
-from tests import core as test_core
+import pytest
+from sockets_framework import __version__
+from sockets_framework.core import Server, Client
 from multiprocessing import Process
+from tests import core as test_core
 
 
-class TesClass01(unittest.TestCase):
-    """Sockets Framework IPC.
+@pytest.fixture
+def fixture01():
+    return ("localhost", 3000)
+
+
+@pytest.fixture
+def fixture02(request, fixture01):
+    test_server = Server(fixture01, test_core)
+    test_server_process = Process(target=test_server.start)
+
+    def terminate_server():
+        test_server.close()
+        test_server_process.terminate()
+
+    request.addfinalizer(terminate_server)
+    return test_server_process
+
+
+def test_version():
+    assert __version__ == '0.1.0'
+
+
+def test_case01(fixture02):
+    """Server is running
+
+    :param fixture02: The server's process
+    :type fixture02: multiprocessing.Process
     """
-    test_address = ("localhost", 3000)
-    test_server = Server(test_address, test_core)
+    fixture02.start()
+    assert fixture02.is_alive() is True
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Starts the Server in a separate process.
-        """
-        cls.test_server_process = Process(target=cls.test_server.start)
-        cls.test_server_process.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        """Closes the server socket, then terminates the process.
-        """
-        cls.test_server.close()
-        cls.test_server_process.terminate()
+def test_case02(fixture01, fixture02):
+    """Normal request
 
-    def test_case01(self):
-        """Server is running.
-        """
-        self.assertIs(self.test_server_process.is_alive(), True)
+    :param fixture01: The server's address
+    :type fixture01: tuple
+    :param fixture02: The server's process
+    :type fixture02: multiprocessing.Process
+    """
+    fixture02.start()
+    with Client(fixture01) as call:
+        response = call.commit("test_function", "echo")
+    assert response == "echo"
 
-    def test_case02(self):
-        """Normal request.
-        """
-        with Client(self.test_address) as session:
-            response = session.commit("test_function", "echo")
-        self.assertEqual(response, "echo")
 
-    def test_case03(self):
-        """NotImplementedError.
-        """
-        with self.assertRaises(NotImplementedError):
-            with Client(self.test_address) as call:
-                call.commit("unknown_function", "echo")
+def test_case03(fixture01, fixture02):
+    """NotImplementedError
 
-    def test_case04(self):
-        """Multiple requests.
-        """
-        with Client(self.test_address) as call:
-            response = call.commit("test_function", "echo_one")
-            self.assertEqual(response, "echo_one")
-            response = call.commit("test_function", "echo_two")
-            self.assertEqual(response, "echo_two")
+    :param fixture01: The server's address
+    :type fixture01: tuple
+    :param fixture02: The server's process
+    :type fixture02: multiprocessing.Process
+    """
+    fixture02.start()
+    with Client(fixture01) as call:
+        with pytest.raises(NotImplementedError):
+            call.commit("unknown_function", "echo")
+
+
+def test_case04(fixture01, fixture02):
+    """Multiple requests.
+
+    :param fixture01: The server's address
+    :type fixture01: tuple
+    :param fixture02: The server's process
+    :type fixture02: multiprocessing.Process
+    """
+    fixture02.start()
+    with Client(fixture01) as call:
+        response = call.commit("test_function", "echo_one")
+        assert response == "echo_one"
+        response = call.commit("test_function", "echo_two")
+        assert response == "echo_two"
