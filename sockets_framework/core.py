@@ -78,6 +78,7 @@ def Client(server_address: str or tuple) -> _Client:
     finally:
         response = _client.commit(SIGEND)
         if response == SIGEND:
+            _client.close()
             _client = None
         else:
             raise RuntimeError("The session is not closed propery")
