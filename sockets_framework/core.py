@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from typing import Any
 
 SIGEND = b"SIGEND"
-_client = None
 
 
 def receive(address: str or tuple) -> Any:
@@ -70,15 +69,13 @@ class _Client(Listener):
 
 @contextmanager
 def Client(server_address: str or tuple) -> _Client:
-    global _client
-    if not _client:
-        _client = _Client(server_address)
+    client = _Client(server_address)
     try:
-        yield _client
+        yield client
     finally:
-        response = _client.commit(SIGEND)
+        response = client.commit(SIGEND)
         if response == SIGEND:
-            _client.close()
-            _client = None
+            client.close()
+            del client
         else:
             raise RuntimeError("The session is not closed propery")
