@@ -20,9 +20,9 @@ from core.settings import LISTEN_ADDRESS, AUTHKEY
 if isinstance(AUTHKEY, str):
     AUTHKEY = bytes(AUTHKEY)
 parser = argparse.ArgumentParser()
-parser.add_argument('startserver', action='store')
+parser.add_argument('runserver', action='store')
 args = parser.parse_args()
-if args.start:
+if args.runserver:
     server = Server(listen_address=LISTEN_ADDRESS,
                     core={self.keys[2]},
                     authkey=AUTHKEY)

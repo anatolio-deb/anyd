@@ -34,7 +34,7 @@ yapf = "^0.30.0"
 pytest = "^6.2.2"
 
 [tool.poetry.scripts]
-sockets-framework = 'sockets-framework:cli'
+sockets_framework = 'sockets_framework:cli'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
