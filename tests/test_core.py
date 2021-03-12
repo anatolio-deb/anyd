@@ -2,7 +2,29 @@ import pytest
 from sockets_framework import __version__
 from sockets_framework.core import Server, Client
 from multiprocessing import Process
-from tests import core as test_core
+import importlib
+import pathlib
+from types import ModuleType
+import sys
+
+
+@pytest.fixture
+def fixture03(tmp_path: pathlib.Path):
+    content = '''
+def test_function(test_arg: str):
+    return test_arg
+'''
+    pkg = tmp_path / "test_pkg"
+    pkg.mkdir()
+    sys.path.append(pkg.as_posix())
+    mod = pkg / "test_core.py"
+    mod.write_text(content)
+    init = pkg / "__init__.py"
+    init.touch()
+    assert mod.read_text() == content
+    test_core = importlib.import_module('test_core')
+    assert isinstance(test_core, ModuleType)
+    return test_core
 
 
 @pytest.fixture
@@ -11,8 +33,8 @@ def fixture01():
 
 
 @pytest.fixture
-def fixture02(request, fixture01):
-    test_server = Server(fixture01, test_core)
+def fixture02(request, fixture01, fixture03):
+    test_server = Server(fixture01, fixture03)
     test_server_process = Process(target=test_server.start)
 
     def terminate_server():

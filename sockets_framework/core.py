@@ -8,10 +8,10 @@ from typing import Any
 SIGEND = b"SIGEND"
 
 
-def receive(address: str or tuple) -> Any:
+def receive(address: str or tuple, authkey: bytes = None) -> Any:
     while True:
         try:
-            with __Client(address) as conn:
+            with __Client(address, authkey=authkey) as conn:
                 response = conn.recv()
         except ConnectionRefusedError:
             time.sleep(0.1)
@@ -20,9 +20,11 @@ def receive(address: str or tuple) -> Any:
 
 
 class Server(Listener):
-    def __init__(self, listening_address: str or tuple,
-                 core: ModuleType) -> None:
-        super().__init__(listening_address)
+    def __init__(self,
+                 listen_address: str or tuple,
+                 core: ModuleType,
+                 authkey: bytes = None) -> None:
+        super().__init__(address=listen_address, authkey=authkey)
         self.core = inspect.getmembers(core, predicate=inspect.isfunction)
 
     def start(self) -> None:
@@ -51,9 +53,9 @@ class Server(Listener):
 
 
 class _Client(Listener):
-    def __init__(self, server_address) -> None:
-        self.local_address = receive(server_address)
-        super().__init__(self.local_address)
+    def __init__(self, server_address, autkey: bytes = None) -> None:
+        self.local_address = receive(server_address, autkey)
+        super().__init__(address=self.local_address)
 
     def commit(self, core_function: str, *args, **kwargs) -> Any:
         request = (core_function, args, kwargs)
