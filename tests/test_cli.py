@@ -14,7 +14,7 @@ def test_case01(tmp_path: pathlib.Path):
                        cwd=tmp_path.as_posix(),
                        check=True)
     assert (tmp_path / 'test_project').exists() is True
-    s = Structure(path=tmp_path, arg_name='test_project')
+    s = Structure(tmp_path / 'test_project', 'test_project')
     assert p.stdout.decode().strip() == s.msg
     for path in s.paths:
         assert path.exists() is True

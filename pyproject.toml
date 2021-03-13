@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sockets-framework"
-version = "0.1.4"
+version = "0.1.5"
 description = ""
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "MIT"
