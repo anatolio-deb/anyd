@@ -35,7 +35,7 @@ python manage.py startserver
 Finally, you can query your server using a `Client` from another environment with a `sockets-framework` installed:
 
 ```python
-from sockets-framework.core import Client
+from sockets_framework.core import Client
 
 with Client() as session:
     response = session.commit("hello", "world")
@@ -56,7 +56,7 @@ print(another_response) # hello Bob
 Install Sockets Framework by running:
 
 ```
-pip install sockets_framework
+pip install sockets-framework
 ```
 
 # Contribute
