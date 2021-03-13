@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "sockets-framework"
-version = "0.1.5"
-description = ""
+version = "0.1.0"
+description = "A tiny framework for easy building customized IPC servers"
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "MIT"
-readme = "README.rst"
+readme = "README.md"
 homepage = "https://github.com/anatolio-deb/sockets-framework"
 repository = "https://github.com/anatolio-deb/sockets-framework"
 keywords = ["ipc", "sockets"]
@@ -32,6 +32,7 @@ python = "^3.9"
 pylama = "^7.7.1"
 yapf = "^0.30.0"
 pytest = "^6.2.2"
+twine = "^3.3.0"
 
 [tool.poetry.scripts]
 sockets_framework = 'sockets_framework.cli:main'
