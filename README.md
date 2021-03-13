@@ -8,17 +8,18 @@ Start a new server project from the shell:
 sockets-framework new my_server
 ```
 
-This will create a structure of a new project inside of `my_server` folder:
+This will create a new `my_server` folder with a structure of a new project:
 
 ```bash
 .
-├── my_server
-│   ├── core.py
-│   └── __init__.py
-└── settings.py
+├── core
+│   ├── __init__.py
+│   ├── my_server.py
+│   └── settings.py
+└── manage.py
 ```
 
-The `core` module is where you define your server's functions, for example:
+`my_server` module is where you define your server's functions, for example:
 
 ```python
 def hello(arg: str):
@@ -28,17 +29,19 @@ def hello(arg: str):
 Then you can start your server from the shell:
 
 ```bash
-sockets-framework startserver
+python manage.py startserver
 ```
 
-Finally, you can query your server using a `Client`:
+Finally, you can query your server using a `Client` from another environment with a `sockets-framework` installed:
 
-```bash
-from sockets_framework.core import Client
+```python
+from sockets-framework.core import Client
 
-with Client() as call:
-    response = call.commit("hello", "world")
-print(response) # "hello world"
+with Client() as session:
+    response = session.commit("hello", "world")
+    another_response = session.commit("hello", "Bob")
+print(response) # hello world
+print(another_response) # hello Bob
 ```
 
 # Features
