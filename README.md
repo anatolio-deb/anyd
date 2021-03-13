@@ -37,7 +37,9 @@ Finally, you can query your server using a `Client` from another environment wit
 ```python
 from sockets_framework.core import Client
 
-with Client() as session:
+server_address = ("localhost", 3000)
+
+with Client(server_address) as session:
     response = session.commit("hello", "world")
     another_response = session.commit("hello", "Bob")
 print(response) # hello world
