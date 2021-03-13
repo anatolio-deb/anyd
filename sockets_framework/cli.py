@@ -7,7 +7,6 @@ class Structure:
     mod = 'core'
 
     def __init__(self, path: pathlib.Path, arg_name: str):
-        self.path = path
         self.keys = ('manage', 'settings', arg_name.replace('-',
                                                             '_'), '__init__')
 
@@ -41,7 +40,7 @@ AUTHKEY = None
                       self.pkg / '.'.join([self.keys[2], self.ext]),
                       self.pkg / '.'.join([self.keys[3], self.ext]))
         self.msg = "Created package {} in {}".format(self.keys[2],
-                                                     self.path.as_posix())
+                                                     path.as_posix())
 
     def deploy(self):
         self.pkg.mkdir()
@@ -65,19 +64,14 @@ def main():
     subprasers = parser.add_subparsers(dest='command')
     new = subprasers.add_parser('new', help='Start a new project.')
     new.add_argument('name', type=str, help='The name of a project.')
-    new.add_argument('path', type=str, help='The path value.', default=None)
     args = parser.parse_args()
     if args.command == "new":
-        if args.path:
-            path = pathlib.Path(args.path)
-            if not path.exists():
-                raise FileNotFoundError(path.as_posix())
-        else:
-            path = pathlib.Path().cwd() / str(args.name)
-            if path.exists():
-                raise FileExistsError(path.as_posix())
-            path.mkdir()
-        structure = Structure(path, args.name)
+        cwd = pathlib.Path().cwd()
+        path = cwd / args.name
+        if path.exists():
+            raise FileExistsError(path.as_posix())
+        path.mkdir()
+        structure = Structure(cwd, args.name)
         structure.deploy()
 
 

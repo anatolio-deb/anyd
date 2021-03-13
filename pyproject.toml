@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sockets-framework"
-version = "0.1.0"
+version = "0.1.4"
 description = ""
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "MIT"
@@ -34,7 +34,7 @@ yapf = "^0.30.0"
 pytest = "^6.2.2"
 
 [tool.poetry.scripts]
-sockets_framework = 'sockets_framework:cli'
+sockets_framework = 'sockets_framework.cli:main'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
