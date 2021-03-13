@@ -56,7 +56,7 @@ print(another_response) # hello Bob
 Install Sockets Framework by running:
 
 ```
-pip install sockets-framework
+pip install sockets_framework
 ```
 
 # Contribute
