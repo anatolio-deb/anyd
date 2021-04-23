@@ -1,17 +1,29 @@
-from multiprocessing.connection import Client as __Client, Listener
-import time
-from types import ModuleType, FunctionType
+"""[summary]
+
+Returns:
+    [type]: [description]
+"""
+from __future__ import annotations
+
 import inspect
-from contextlib import contextmanager
-from typing import Any
+import time
+from contextlib import AbstractContextManager
+from multiprocessing import connection
+from types import TracebackType
+from typing import Any, Optional, Tuple, Type
 
-SIGEND = b"SIGEND"
+SIGENDSESSION = b"SIGENDSESSION"
 
 
-def receive(address: str or tuple, authkey: bytes = None) -> Any:
+def _receive(*args, **kwargs) -> Any:
+    """[summary]
+
+    Returns:
+        Any: [description]
+    """
     while True:
         try:
-            with __Client(address, authkey=authkey) as conn:
+            with connection.Client(*args, **kwargs) as conn:
                 response = conn.recv()
         except ConnectionRefusedError:
             time.sleep(0.1)
@@ -19,65 +31,95 @@ def receive(address: str or tuple, authkey: bytes = None) -> Any:
             return response
 
 
-class Server(Listener):
-    def __init__(self,
-                 listen_address: str or tuple,
-                 core: ModuleType,
-                 authkey: bytes = None) -> None:
-        super().__init__(address=listen_address, authkey=authkey)
-        self.core = inspect.getmembers(core, predicate=inspect.isfunction)
+class BaseServer(connection.Listener):
+    """[summary]
+
+    Args:
+        BaseServer ([type]): [description]
+    """
 
     def start(self) -> None:
+        """[summary]"""
         while True:
             with self.accept() as conn:
                 conn.send(self.last_accepted)
             while True:
-                request = receive(self.last_accepted)
-                if request[0] in [t[0] for t in self.core]:
-                    for name, func in self.core:
-                        if name == request[0]:
-                            response = FunctionType(
-                                code=func.__code__,
-                                globals=func.__globals__,
-                                argdefs=inspect.signature(func).bind(
-                                    *request[1], **request[2]).args)()
-                elif request[0] == SIGEND:
-                    response = SIGEND
+                request = _receive(address=self.last_accepted)
+                if request[0] in dir(self):
+                    for name, link in inspect.getmembers(
+                        self, predicate=inspect.ismethod
+                    ):
+                        if name == request[0] and name not in dir(connection.Listener):
+                            response = link(*request[1], **request[2])
+                            break
+                        response = ValueError(
+                            f"The method name {request[0]} is unacceptable, "
+                            "consider renaming your method."
+                        )
+                elif request[0] == SIGENDSESSION:
+                    response = SIGENDSESSION
                 else:
                     response = NotImplementedError(request[0])
-                with Listener(address=self.last_accepted) as listener:
+                with connection.Listener(address=self.last_accepted) as listener:
                     with listener.accept() as conn:
                         conn.send(response)
-                if response == SIGEND:
+                if response == SIGENDSESSION:
                     break
 
 
-class _Client(Listener):
-    def __init__(self, server_address, autkey: bytes = None) -> None:
-        self.local_address = receive(server_address, autkey)
+class Client(connection.Listener):
+    """[summary]
+
+    Args:
+        Listener ([type]): [description]
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.local_address = _receive(*args, **kwargs)
         super().__init__(address=self.local_address)
 
-    def commit(self, core_function: str, *args, **kwargs) -> Any:
-        request = (core_function, args, kwargs)
+    def commit(self, method_name: str, *args, **kwargs) -> Any:
+        """[summary]
+
+        Args:
+            method (str): [description]
+
+        Raises:
+            response: [description]
+
+        Returns:
+            Any: [description]
+        """
+        request = (method_name, args, kwargs)
         with self.accept() as conn:
             conn.send(request)
         self.close()
-        response = receive(self.local_address)
+        response = _receive(address=self.local_address)
         super().__init__(self.local_address)
-        if isinstance(response, NotImplementedError):
+        if isinstance(response, (NotImplementedError, ValueError)):
             raise response
         return response
 
 
-@contextmanager
-def Client(server_address: str or tuple) -> _Client:
-    client = _Client(server_address)
-    try:
-        yield client
-    finally:
-        response = client.commit(SIGEND)
-        if response == SIGEND:
-            client.close()
-            del client
-        else:
-            raise RuntimeError("The session is not closed propery")
+class Session(AbstractContextManager):
+    """[summary]"""
+
+    def __init__(
+        self,
+        server_address: Type[str] | Type[Tuple[str, int]],
+        family: str = None,
+        authkey: bytes = None,
+    ) -> None:
+        self.client = Client(address=server_address, family=family, authkey=authkey)
+
+    def __enter__(self) -> Client:
+        return self.client
+
+    def __exit__(
+        self,
+        __exc_type: Optional[Type[BaseException]],
+        __exc_value: Optional[BaseException],
+        __traceback: Optional[TracebackType],
+    ) -> Optional[bool]:
+        self.client.commit(method_name=SIGENDSESSION)
+        self.client.close()
