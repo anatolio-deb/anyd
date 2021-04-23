@@ -24,11 +24,7 @@ jobs:
     - name: Lint with pylint
       run: |
         pip install pylint
-        pylint --max-line-length=88 --disable C0114 --notes= sockets_framework/
-    - name: Test
-      run: |
-        pip install pytest
-        pytest -v
+        pylint sockets_framework/ --load-plugins=pylint_django --django-settings-module=core.settings --max-line-length=88 --disable --notes=
     - name: Publish
       run: |
         poetry publish --username anatolio --password ad.5319.93A
