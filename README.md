@@ -17,7 +17,7 @@ class MyServer(BaseServer):
 Start it:
 
 ```python
-address =('localhost', 4000)
+address = ('localhost', 4000)
 server = MyServer(address)
 server.start()
 ```
