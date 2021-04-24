@@ -25,7 +25,7 @@ server.start()
 You can query your server using a `Client` from another environment with `sockets-framework` installed:
 
 ```python
-from sockets-framework import Session
+from sockets_framework import Session
 
 address = ('localhost', 4000)
 

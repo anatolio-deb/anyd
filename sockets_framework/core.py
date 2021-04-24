@@ -16,11 +16,7 @@ SIGENDSESSION = b"SIGENDSESSION"
 
 
 def _receive(*args, **kwargs) -> Any:
-    """[summary]
-
-    Returns:
-        Any: [description]
-    """
+    """A base function to receive data from some socket"""
     while True:
         try:
             with connection.Client(*args, **kwargs) as conn:
@@ -32,14 +28,18 @@ def _receive(*args, **kwargs) -> Any:
 
 
 class BaseServer(connection.Listener):
-    """[summary]
+    """Inherit form this class and define your methods:
 
-    Args:
-        BaseServer ([type]): [description]
+    class MyServer(BaseServer):
+        def my_echo_method(self, my_arg):
+            return my_arg
     """
 
     def start(self) -> None:
-        """[summary]"""
+        """Starts the server instance, "
+        listens for incoming connections, "
+        "handle's client's requets, "
+        calls approproate method."""
         while True:
             with self.accept() as conn:
                 conn.send(self.last_accepted)
@@ -68,27 +68,23 @@ class BaseServer(connection.Listener):
 
 
 class Client(connection.Listener):
-    """[summary]
-
-    Args:
-        Listener ([type]): [description]
-    """
+    """Used with BaseServer instances. Gets communication address from the BaseServer,
+    Sends a request to the BaseServer's listening address, then opens a listener on
+    the received address to accept the response from the BaseServer"""
 
     def __init__(self, *args, **kwargs) -> None:
         self.local_address = _receive(*args, **kwargs)
         super().__init__(address=self.local_address)
 
     def commit(self, method_name: str, *args, **kwargs) -> Any:
-        """[summary]
+        """Used to form and send the request to the BaseServer,
+        then accepts the response from it.
 
         Args:
-            method (str): [description]
+            method (str): A name of the method to call on the BaseServer
 
         Raises:
-            response: [description]
-
-        Returns:
-            Any: [description]
+            response: The value returned by the method on the BaseServer
         """
         request = (method_name, args, kwargs)
         with self.accept() as conn:
@@ -102,7 +98,7 @@ class Client(connection.Listener):
 
 
 class Session(AbstractContextManager):
-    """[summary]"""
+    """A context manager for Client. Supports multiple requests per session."""
 
     def __init__(
         self,
@@ -121,5 +117,7 @@ class Session(AbstractContextManager):
         __exc_value: Optional[BaseException],
         __traceback: Optional[TracebackType],
     ) -> Optional[bool]:
-        self.client.commit(method_name=SIGENDSESSION)
+        response = self.client.commit(method_name=SIGENDSESSION)
         self.client.close()
+        if response != SIGENDSESSION:
+            raise RuntimeError("Improperly closed session")
