@@ -1,8 +1,4 @@
-"""[summary]
-
-Returns:
-    [type]: [description]
-"""
+"""Socket Framework gives you an easy way to create an IPC server with a custom functionality."""
 from __future__ import annotations
 
 import inspect
