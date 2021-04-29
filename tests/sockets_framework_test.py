@@ -29,6 +29,9 @@ class Server(BaseServer):
     def __str__(self) -> str:
         """Should not be exposed"""
 
+    def no_args_action(self):
+        return True
+
 
 class TestClass01(TestCase):
     """The main test for the sockets_framework.core.BaseServer
@@ -75,6 +78,12 @@ class TestClass01(TestCase):
             self.assertEqual(4, response)
             response = client.commit("get_sum", 12, 5)
             self.assertEqual(17, response)
+
+    def test_case06(self):
+        """Querying function with no argiments"""
+        with Session(self.server_address) as client:
+            response = client.commit("no_args_action")
+        self.assertTrue(response)
 
 
 class TestClass02(TestCase):
