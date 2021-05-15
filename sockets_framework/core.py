@@ -30,21 +30,21 @@ class BaseServer(connection.Listener):
         """Starts the server instance, listens for incoming connections, \
             handle's client's requets, calls appropriate method."""
         while True:
-            logging.info("Listening at {}:{}".format(self.address[0], self.address[1]))
+            logging.info("Listening at %s:%s", self.address[0], self.address[1])
 
             with self.accept() as conn:
                 logging.info(
-                    "Incoming connection from {}:{}".format(
-                        self.last_accepted[0], self.last_accepted[1]
-                    )
+                    "Incoming connection from %s:%s",
+                    self.last_accepted[0],
+                    self.last_accepted[1],
                 )
 
                 conn.send(self.last_accepted)
 
             logging.info(
-                "Entering session loop for client: {}:{}".format(
-                    self.last_accepted[0], self.last_accepted[1]
-                )
+                "Entering session loop for client: %s:%s",
+                self.last_accepted[0],
+                self.last_accepted[1],
             )
             while True:
                 try:
@@ -54,9 +54,10 @@ class BaseServer(connection.Listener):
                     time.sleep(0.01)
                 else:
                     logging.info(
-                        "Accepted request {} from {}:{}".format(
-                            request, self.last_accepted[0], self.last_accepted[1]
-                        )
+                        "Accepted request %s from %s:%s",
+                        request,
+                        self.last_accepted[0],
+                        self.last_accepted[1],
                     )
                     if request[0] in dir(self):
                         for name, link in inspect.getmembers(
@@ -77,24 +78,24 @@ class BaseServer(connection.Listener):
                         response = NotImplementedError(request[0])
 
                     logging.info(
-                        "Awaiting in-session request from {}:{}".format(
-                            self.last_accepted[0], self.last_accepted[1]
-                        )
+                        "Awaiting in-session request from %s:%s",
+                        self.last_accepted[0],
+                        self.last_accepted[1],
                     )
                     with self.accept() as conn:
                         logging.info(
-                            "Sending response: {} to {}:{}".format(
-                                response,
-                                self.last_accepted[0],
-                                self.last_accepted[1],
-                            )
+                            "Sending response: %s to %s:%s",
+                            response,
+                            self.last_accepted[0],
+                            self.last_accepted[1],
                         )
+
                         conn.send((response, self.last_accepted))
                     if response == SIGENDSESSION:
                         logging.info(
-                            "Ending session for {}:{}".format(
-                                self.last_accepted[0], self.last_accepted[1]
-                            )
+                            "Ending session for %s:%s",
+                            self.last_accepted[0],
+                            self.last_accepted[1],
                         )
                         break
 
