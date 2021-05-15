@@ -99,12 +99,15 @@ class TestClass02(TestCase):
         cls.server_process.start()
 
     def test_case01(self):
+        self.assertTrue(self.server_process.is_alive())
+
+    def test_case02(self):
         """Normal request"""
         with Session(self.server_address, authkey=self.authkey) as client:
             response = client.commit("get_sum", 1, 2)
         self.assertEqual(3, response)
 
-    def test_case02(self):
+    def test_case03(self):
         """Wrong authentication key"""
         with self.assertRaises(AuthenticationError):
             with Session(self.server_address, authkey=b"blowfish") as client:

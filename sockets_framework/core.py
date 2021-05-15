@@ -3,6 +3,7 @@ an IPC server with a custom functionality."""
 from __future__ import annotations
 
 import inspect
+import logging
 import time
 from contextlib import AbstractContextManager
 from multiprocessing import connection
@@ -10,18 +11,11 @@ from types import TracebackType
 from typing import Any, Optional, Tuple, Type
 
 SIGENDSESSION = b"SIGENDSESSION"
-
-
-def _receive(*args, **kwargs) -> Any:
-    """A base function to receive data from some socket"""
-    while True:
-        try:
-            with connection.Client(*args, **kwargs) as conn:
-                response = conn.recv()
-        except ConnectionRefusedError:
-            time.sleep(0.1)
-        else:
-            return response
+logging.basicConfig(
+    format="[%(levelname)s] [%(asctime)s] %(message)s",
+    datefmt="%I:%M:%S",
+    level=logging.DEBUG,
+)
 
 
 class BaseServer(connection.Listener):
@@ -33,35 +27,76 @@ class BaseServer(connection.Listener):
     """
 
     def start(self) -> None:
-        """Starts the server instance, "
-        listens for incoming connections, "
-        "handle's client's requets, "
-        calls approproate method."""
+        """Starts the server instance, listens for incoming connections, \
+            handle's client's requets, calls appropriate method."""
         while True:
+            logging.info("Listening at {}:{}".format(self.address[0], self.address[1]))
+
             with self.accept() as conn:
+                logging.info(
+                    "Incoming connection from {}:{}".format(
+                        self.last_accepted[0], self.last_accepted[1]
+                    )
+                )
+
                 conn.send(self.last_accepted)
+
+            logging.info(
+                "Entering session loop for client: {}:{}".format(
+                    self.last_accepted[0], self.last_accepted[1]
+                )
+            )
             while True:
-                request = _receive(address=self.last_accepted)
-                if request[0] in dir(self):
-                    for name, link in inspect.getmembers(
-                        self, predicate=inspect.ismethod
-                    ):
-                        if name == request[0] and name not in dir(connection.Listener):
-                            response = link(*request[1], **request[2])
-                            break
-                        response = ValueError(
-                            f"The method name {request[0]} is unacceptable, "
-                            "consider renaming your method."
-                        )
-                elif request[0] == SIGENDSESSION:
-                    response = SIGENDSESSION
+                try:
+                    with connection.Client(address=self.last_accepted) as conn:
+                        request = conn.recv()
+                except ConnectionRefusedError:
+                    time.sleep(0.01)
                 else:
-                    response = NotImplementedError(request[0])
-                with connection.Listener(address=self.last_accepted) as listener:
-                    with listener.accept() as conn:
-                        conn.send(response)
-                if response == SIGENDSESSION:
-                    break
+                    logging.info(
+                        "Accepted request {} from {}:{}".format(
+                            request, self.last_accepted[0], self.last_accepted[1]
+                        )
+                    )
+                    if request[0] in dir(self):
+                        for name, link in inspect.getmembers(
+                            self, predicate=inspect.ismethod
+                        ):
+                            if name == request[0] and name not in dir(
+                                connection.Listener
+                            ):
+                                response = link(*request[1], **request[2])
+                                break
+                            response = ValueError(
+                                f"The method name {request[0]} is unacceptable, "
+                                "consider renaming your method."
+                            )
+                    elif request[0] == SIGENDSESSION:
+                        response = SIGENDSESSION
+                    else:
+                        response = NotImplementedError(request[0])
+
+                    logging.info(
+                        "Awaiting in-session request from {}:{}".format(
+                            self.last_accepted[0], self.last_accepted[1]
+                        )
+                    )
+                    with self.accept() as conn:
+                        logging.info(
+                            "Sending response: {} to {}:{}".format(
+                                response,
+                                self.last_accepted[0],
+                                self.last_accepted[1],
+                            )
+                        )
+                        conn.send((response, self.last_accepted))
+                    if response == SIGENDSESSION:
+                        logging.info(
+                            "Ending session for {}:{}".format(
+                                self.last_accepted[0], self.last_accepted[1]
+                            )
+                        )
+                        break
 
 
 class Client(connection.Listener):
@@ -69,9 +104,18 @@ class Client(connection.Listener):
     Sends a request to the BaseServer's listening address, then opens a listener on
     the received address to accept the response from the BaseServer"""
 
-    def __init__(self, *args, **kwargs) -> None:
-        self.local_address = _receive(*args, **kwargs)
-        super().__init__(address=self.local_address)
+    def __init__(
+        self,
+        address: Type[Tuple[str, int]],
+        family: str = None,
+        authkey: bytes = None,
+    ) -> None:
+        with connection.Client(address, family, authkey) as conn:
+            local_address = conn.recv()
+        super().__init__(local_address)
+        self.remote_address = address
+        self.family = family
+        self.authkey = authkey
 
     def commit(self, method_name: str, *args, **kwargs) -> Any:
         """Used to form and send the request to the BaseServer,
@@ -84,11 +128,12 @@ class Client(connection.Listener):
             response: The value returned by the method on the BaseServer
         """
         request = (method_name, args, kwargs)
+
         with self.accept() as conn:
             conn.send(request)
-        self.close()
-        response = _receive(address=self.local_address)
-        super().__init__(self.local_address)
+        with connection.Client(self.remote_address, self.family, self.authkey) as conn:
+            response, local_address = conn.recv()
+        super().__init__(local_address)
         if isinstance(response, (NotImplementedError, ValueError)):
             raise response
         return response
@@ -99,7 +144,7 @@ class Session(AbstractContextManager):
 
     def __init__(
         self,
-        server_address: Type[str] | Type[Tuple[str, int]],
+        server_address: Type[Tuple[str, int]],
         family: str = None,
         authkey: bytes = None,
     ) -> None:
@@ -117,4 +162,4 @@ class Session(AbstractContextManager):
         response = self.client.commit(method_name=SIGENDSESSION)
         self.client.close()
         if response != SIGENDSESSION:
-            raise RuntimeError("Improperly closed session")
+            raise ValueError(f"Improperly closed session: {response}")
