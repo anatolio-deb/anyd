@@ -61,14 +61,14 @@ class TestClass01(TestCase):
 
     def test_case03(self):
         """Not implemented request"""
-        with Session(self.server_address) as client:
-            with self.assertRaises(NotImplementedError):
+        with self.assertRaises(NotImplementedError):
+            with Session(self.server_address) as client:
                 client.commit("unimplemented_method")
 
     def test_case04(self):
         """Internal method request"""
-        with Session(self.server_address) as client:
-            with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):
+            with Session(self.server_address) as client:
                 client.commit("__str__")
 
     def test_case05(self):
@@ -76,8 +76,8 @@ class TestClass01(TestCase):
         with Session(self.server_address) as client:
             response = client.commit("get_sum", 2, 2)
             self.assertEqual(4, response)
-            response = client.commit("get_sum", 12, 5)
-            self.assertEqual(17, response)
+            response = client.commit("get_sum", 12, response)
+            self.assertEqual(16, response)
 
     def test_case06(self):
         """Querying function with no argiments"""
@@ -92,7 +92,7 @@ class TestClass02(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        cls.authkey = b"helloworld"
+        cls.authkey = b"dog"
         cls.server_address = ("localhost", 5000)
         cls.server = Server(cls.server_address, authkey=cls.authkey)
         cls.server_process = Process(target=cls.server.start)
@@ -110,7 +110,7 @@ class TestClass02(TestCase):
     def test_case03(self):
         """Wrong authentication key"""
         with self.assertRaises(AuthenticationError):
-            with Session(self.server_address, authkey=b"blowfish") as client:
+            with Session(self.server_address, authkey=b"fish") as client:
                 client.commit("get_sum", 1, 2)
 
     @classmethod

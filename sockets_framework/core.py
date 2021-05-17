@@ -1,24 +1,32 @@
-"""Socket Framework gives you an easy way to create
-an IPC server with a custom functionality."""
 from __future__ import annotations
 
 import inspect
 import logging
 import time
-from contextlib import AbstractContextManager
-from multiprocessing import connection
+from multiprocessing.connection import Client, Listener
 from types import TracebackType
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Iterable, Optional, Tuple, Type
 
-SIGENDSESSION = b"SIGENDSESSION"
 logging.basicConfig(
     format="[%(levelname)s] [%(asctime)s] %(message)s",
     datefmt="%I:%M:%S",
     level=logging.DEBUG,
 )
+SIGENDSESSION = b"SIGENDSESSION"
 
 
-class BaseServer(connection.Listener):
+def recv_from(*args, **kwargs):
+    data = None
+    while not data:
+        try:
+            with Client(*args, **kwargs) as conn:
+                data = conn.recv()
+        except ConnectionRefusedError:
+            time.sleep(0.01)
+    return data
+
+
+class BaseServer(Listener):
     """Inherit form this class and define your methods:
 
     class MyServer(BaseServer):
@@ -26,9 +34,12 @@ class BaseServer(connection.Listener):
             return my_arg
     """
 
-    def start(self) -> None:
+    response: Any = None
+    request: Tuple[str][Iterable] = ()
+
+    def start(self):
         """Starts the server instance, listens for incoming connections, \
-            handle's client's requets, calls appropriate method."""
+        handle's client's requets, calls appropriate method."""
         while True:
             logging.info("Listening at %s:%s", self.address[0], self.address[1])
 
@@ -40,80 +51,74 @@ class BaseServer(connection.Listener):
                 )
 
                 conn.send(self.last_accepted)
+            while self.response != SIGENDSESSION and not isinstance(
+                self.response, (NotImplementedError, ValueError)
+            ):
+                logging.info(
+                    "Session loop started for client: %s:%s",
+                    self.last_accepted[0],
+                    self.last_accepted[1],
+                )
+
+                self.request = recv_from(address=self.last_accepted)
+
+                logging.info(
+                    "Accepted request %s from %s:%s",
+                    self.request,
+                    self.last_accepted[0],
+                    self.last_accepted[1],
+                )
+
+                self._set_response()
+
+                with self.accept() as conn:
+                    logging.info(
+                        "Sending response: %s to %s:%s",
+                        self.response,
+                        self.last_accepted[0],
+                        self.last_accepted[1],
+                    )
+
+                    conn.send((self.response, self.last_accepted))
+
+            self.response = None
 
             logging.info(
-                "Entering session loop for client: %s:%s",
+                "Ending session for %s:%s",
                 self.last_accepted[0],
                 self.last_accepted[1],
             )
-            while True:
-                try:
-                    with connection.Client(address=self.last_accepted) as conn:
-                        request = conn.recv()
-                except ConnectionRefusedError:
-                    time.sleep(0.01)
-                else:
-                    logging.info(
-                        "Accepted request %s from %s:%s",
-                        request,
-                        self.last_accepted[0],
-                        self.last_accepted[1],
-                    )
-                    if request[0] in dir(self):
-                        for name, link in inspect.getmembers(
-                            self, predicate=inspect.ismethod
-                        ):
-                            if name == request[0] and name not in dir(
-                                connection.Listener
-                            ):
-                                response = link(*request[1], **request[2])
-                                break
-                            response = ValueError(
-                                f"The method name {request[0]} is unacceptable, "
-                                "consider renaming your method."
-                            )
-                    elif request[0] == SIGENDSESSION:
-                        response = SIGENDSESSION
-                    else:
-                        response = NotImplementedError(request[0])
 
-                    logging.info(
-                        "Awaiting in-session request from %s:%s",
-                        self.last_accepted[0],
-                        self.last_accepted[1],
-                    )
-                    with self.accept() as conn:
-                        logging.info(
-                            "Sending response: %s to %s:%s",
-                            response,
-                            self.last_accepted[0],
-                            self.last_accepted[1],
-                        )
-
-                        conn.send((response, self.last_accepted))
-                    if response == SIGENDSESSION:
-                        logging.info(
-                            "Ending session for %s:%s",
-                            self.last_accepted[0],
-                            self.last_accepted[1],
-                        )
-                        break
+    def _set_response(self):
+        if self.request[0] in dir(self):
+            for name, link in inspect.getmembers(self, predicate=inspect.ismethod):
+                if name == self.request[0] and name not in dir(super):
+                    self.response = link(*self.request[1], **self.request[2])
+                    break
+                self.response = ValueError(
+                    f"The method name {self.request[0]} is unacceptable, "
+                    "consider renaming your method."
+                )
+        elif self.request[0] == SIGENDSESSION:
+            self.response = SIGENDSESSION
+        else:
+            self.response = NotImplementedError(self.request[0])
 
 
-class Client(connection.Listener):
+class _Client(Listener):
     """Used with BaseServer instances. Gets communication address from the BaseServer,
     Sends a request to the BaseServer's listening address, then opens a listener on
     the received address to accept the response from the BaseServer"""
 
+    response: Any = None
+    request: Tuple[str][Iterable] = ()
+
     def __init__(
-        self,
-        address: Type[Tuple[str, int]],
-        family: str = None,
-        authkey: bytes = None,
+        self, address: str | Tuple[str, int], family: str | None, authkey: bytes | None
     ) -> None:
-        with connection.Client(address, family, authkey) as conn:
-            local_address = conn.recv()
-        super().__init__(local_address)
+        self.session_socket = recv_from(address, family, authkey)
+        # NOTE: might except OSError here
+        super().__init__(address=self.session_socket)
         self.remote_address = address
         self.family = family
         self.authkey = authkey
@@ -128,30 +133,35 @@ class Client(connection.Listener):
         Raises:
             response: The value returned by the method on the BaseServer
         """
-        request = (method_name, args, kwargs)
+        self.request = (method_name, args, kwargs)
 
         with self.accept() as conn:
-            conn.send(request)
-        with connection.Client(self.remote_address, self.family, self.authkey) as conn:
-            response, local_address = conn.recv()
-        super().__init__(local_address)
-        if isinstance(response, (NotImplementedError, ValueError)):
-            raise response
-        return response
+            conn.send(self.request)
+
+        self.response, self.session_socket = recv_from(
+            self.remote_address, self.family, self.authkey
+        )
+
+        if isinstance(self.response, (NotImplementedError, ValueError)):
+            raise self.response
+
+        super().__init__(address=self.session_socket)
+
+        return self.response
 
 
-class Session(AbstractContextManager):
+class Session:
     """A context manager for Client. Supports multiple requests per session."""
 
     def __init__(
         self,
-        server_address: Type[Tuple[str, int]],
+        server_address: Tuple[str, int],
         family: str = None,
         authkey: bytes = None,
     ) -> None:
-        self.client = Client(address=server_address, family=family, authkey=authkey)
+        self.client = _Client(address=server_address, family=family, authkey=authkey)
 
-    def __enter__(self) -> Client:
+    def __enter__(self) -> _Client:
         return self.client
 
     def __exit__(
@@ -160,7 +170,28 @@ class Session(AbstractContextManager):
         __exc_value: Optional[BaseException],
         __traceback: Optional[TracebackType],
     ) -> Optional[bool]:
-        response = self.client.commit(method_name=SIGENDSESSION)
-        self.client.close()
-        if response != SIGENDSESSION:
-            raise ValueError(f"Improperly closed session: {response}")
+        if not __exc_type:
+            self.client.commit(method_name=SIGENDSESSION)
+            self.client.close()
+            if self.client.response != SIGENDSESSION:
+                raise ValueError(f"Improperly closed session: {self.client.response}")
+
+
+# if __name__ == "__main__":
+#     from threading import Thread
+
+#     class Server(BaseServer):
+#         def echo(self, arg):
+#             return arg
+
+#     addr = ("localhost", 3000)
+
+#     server = Server(addr)
+#     thread = Thread(target=server.start)
+#     thread.start()
+#     with Session(addr) as client:
+#         client.commit("echo", "arg")
+#         print(client.response)
+#         client.commit("echo", "arg0")
+#         print(client.response)
+#     print(client.response)

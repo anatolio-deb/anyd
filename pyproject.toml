@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sockets-framework"
-version = "0.2.0"
+version = "0.2.1"
 description = "A tiny framework for easy building customized IPC servers"
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "MIT"
