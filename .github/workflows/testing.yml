@@ -24,7 +24,7 @@ jobs:
     - name: Lint with pylint
       run: |
         pip install pylint
-        pylint --max-line-length=88 --disable C0114 C0116 --notes= sockets_framework/
+        pylint --max-line-length=88 --disable=C0114,C0116 --notes= sockets_framework/
     - name: Test
       run: |
         pip install pytest

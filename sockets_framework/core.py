@@ -175,23 +175,3 @@ class Session:
             self.client.close()
             if self.client.response != SIGENDSESSION:
                 raise ValueError(f"Improperly closed session: {self.client.response}")
-
-
-# if __name__ == "__main__":
-#     from threading import Thread
-
-#     class Server(BaseServer):
-#         def echo(self, arg):
-#             return arg
-
-#     addr = ("localhost", 3000)
-
-#     server = Server(addr)
-#     thread = Thread(target=server.start)
-#     thread.start()
-#     with Session(addr) as client:
-#         client.commit("echo", "arg")
-#         print(client.response)
-#         client.commit("echo", "arg0")
-#         print(client.response)
-#     print(client.response)
