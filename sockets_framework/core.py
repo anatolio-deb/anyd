@@ -58,7 +58,7 @@ class BaseServer(Listener):
                     try:
                         self.request = _recv_from(address=self.last_accepted)
                     except ConnectionRefusedError as ex:
-                        logging.warning(ex)
+                        logging.error(ex)
                     else:
                         break
                     finally:
@@ -125,12 +125,10 @@ class _Client(Listener):
         while True:
             try:
                 super().__init__(address=self.session_socket)
-            except OSError as ex:
-                print(ex)
+            except OSError:
+                time.sleep(2)
             else:
                 break
-            finally:
-                time.sleep(2)
 
         self.remote_address = address
         self.family = family
