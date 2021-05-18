@@ -17,7 +17,7 @@ SIGENDSESSION = b"SIGENDSESSION"
 
 def recv_from(*args, **kwargs):
     data: Any = None
-    max_retries = 100
+    max_retries: int = 100
     while not data and max_retries > 0:
         try:
             with Client(*args, **kwargs) as conn:
