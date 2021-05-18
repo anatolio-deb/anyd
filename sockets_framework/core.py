@@ -4,7 +4,7 @@ import inspect
 import logging
 import time
 from multiprocessing.connection import Client, Listener
-from types import FunctionType, TracebackType
+from types import TracebackType
 from typing import Any, Iterable, Optional, Tuple, Type
 
 logging.basicConfig(
@@ -15,41 +15,9 @@ logging.basicConfig(
 SIGENDSESSION: bytes = b"SIGENDSESSION"
 
 
-def action_if_socket_released(
-    action: FunctionType, exception: Exception, *args, **kwargs
-):
-    """Perform some socket relatied function when it's known, that this socket
-    was already bind before, and might be not released yet.
-
-    If socket keeps bieng unreleased for 1 second, raise an appropriate exception.
-
-    Args:
-        action (FunctionType): A socket related function to call
-        exception (Exception): An exception that is raised by the action function
-
-    Returns:
-        [type]: [description]
-    """
-    max_retries: int = 100
-
-    while max_retries > 0:
-        try:
-            return action(*args, **kwargs)
-        except exception:
-            max_retries -= 1
-
-            if max_retries == 0:
-                raise
-
-            time.sleep(0.01)
-
-
-def recv_from(*args, **kwargs):
-    def action(*args, **kwargs):
-        with Client(*args, **kwargs) as conn:
-            return conn.recv()
-
-    return action_if_socket_released(action, ConnectionRefusedError, *args, **kwargs)
+def _recv_from(*args, **kwargs):
+    with Client(*args, **kwargs) as conn:
+        return conn.recv()
 
 
 class BaseServer(Listener):
@@ -76,7 +44,7 @@ class BaseServer(Listener):
                     self.last_accepted[1],
                 )
 
-                conn.send(self.last_accepted)
+                conn.send((self.response, self.last_accepted))
             while self.response != SIGENDSESSION and not isinstance(
                 self.response, (NotImplementedError, ValueError)
             ):
@@ -86,30 +54,36 @@ class BaseServer(Listener):
                     self.last_accepted[1],
                 )
 
-                try:
-                    self.request = recv_from(address=self.last_accepted)
-                except ConnectionRefusedError as exception:
-                    logging.warning(exception)
-                    self.response = SIGENDSESSION
-                else:
+                while True:
+                    try:
+                        self.request = _recv_from(address=self.last_accepted)
+                    except ConnectionRefusedError as ex:
+                        logging.warning(ex)
+                    else:
+                        break
+                    finally:
+                        time.sleep(1)
+
+                logging.info(
+                    "Accepted request %s from %s:%s",
+                    self.request,
+                    self.last_accepted[0],
+                    self.last_accepted[1],
+                )
+
+                self._set_response()
+
+                with self.accept() as conn:
                     logging.info(
-                        "Accepted request %s from %s:%s",
-                        self.request,
+                        "Sending response: %s to %s:%s",
+                        self.response,
                         self.last_accepted[0],
                         self.last_accepted[1],
                     )
 
-                    self._set_response()
+                    conn.send((self.response, self.last_accepted))
 
-                    with self.accept() as conn:
-                        logging.info(
-                            "Sending response: %s to %s:%s",
-                            self.response,
-                            self.last_accepted[0],
-                            self.last_accepted[1],
-                        )
-
-                        conn.send((self.response, self.last_accepted))
+                self.request = None
 
             self.response = None
 
@@ -146,9 +120,18 @@ class _Client(Listener):
     def __init__(
         self, address: str | Tuple[str, int], family: str | None, authkey: bytes | None
     ) -> None:
-        self.session_socket = recv_from(address, family, authkey)
-        # NOTE: might except OSError here
-        super().__init__(address=self.session_socket)
+        self.response, self.session_socket = _recv_from(address, family, authkey)
+
+        while True:
+            try:
+                super().__init__(address=self.session_socket)
+            except OSError as ex:
+                print(ex)
+            else:
+                break
+            finally:
+                time.sleep(2)
+
         self.remote_address = address
         self.family = family
         self.authkey = authkey
@@ -168,16 +151,10 @@ class _Client(Listener):
         with self.accept() as conn:
             conn.send(self.request)
 
-        self.response, self.session_socket = recv_from(
-            self.remote_address, self.family, self.authkey
-        )
+        self.__init__(self.remote_address, self.family, self.authkey)
 
         if isinstance(self.response, (NotImplementedError, ValueError)):
             raise self.response
-
-        action_if_socket_released(
-            super().__init__, OSError, address=self.session_socket
-        )
 
         return self.response
 
@@ -204,6 +181,6 @@ class Session:
     ) -> Optional[bool]:
         if not __exc_type:
             self.client.commit(method_name=SIGENDSESSION)
-            self.client.close()
             if self.client.response != SIGENDSESSION:
                 raise ValueError(f"Improperly closed session: {self.client.response}")
+        self.client.close()
