@@ -4,7 +4,7 @@ import inspect
 import logging
 import time
 from multiprocessing.connection import Client, Listener
-from types import TracebackType
+from types import FunctionType, TracebackType
 from typing import Any, Iterable, Optional, Tuple, Type
 
 logging.basicConfig(
@@ -12,23 +12,44 @@ logging.basicConfig(
     datefmt="%I:%M:%S",
     level=logging.INFO,
 )
-SIGENDSESSION = b"SIGENDSESSION"
+SIGENDSESSION: bytes = b"SIGENDSESSION"
+
+
+def action_if_socket_released(
+    action: FunctionType, exception: Exception, *args, **kwargs
+):
+    """Perform some socket relatied function when it's known, that this socket
+    was already bind before, and might be not released yet.
+
+    If socket keeps bieng unreleased for 1 second, raise an appropriate exception.
+
+    Args:
+        action (FunctionType): A socket related function to call
+        exception (Exception): An exception that is raised by the action function
+
+    Returns:
+        [type]: [description]
+    """
+    max_retries: int = 100
+
+    while max_retries > 0:
+        try:
+            return action(*args, **kwargs)
+        except exception:
+            max_retries -= 1
+
+            if max_retries == 0:
+                raise
+
+            time.sleep(0.01)
 
 
 def recv_from(*args, **kwargs):
-    data: Any = None
-    max_retries: int = 100
-    while not data and max_retries > 0:
-        try:
-            with Client(*args, **kwargs) as conn:
-                data = conn.recv()
-        except ConnectionRefusedError:
-            max_retries -= 1
-            if max_retries == 0:
-                raise
-            time.sleep(0.01)
-        else:
-            return data
+    def action(*args, **kwargs):
+        with Client(*args, **kwargs) as conn:
+            return conn.recv()
+
+    return action_if_socket_released(action, ConnectionRefusedError, *args, **kwargs)
 
 
 class BaseServer(Listener):
@@ -154,7 +175,9 @@ class _Client(Listener):
         if isinstance(self.response, (NotImplementedError, ValueError)):
             raise self.response
 
-        super().__init__(address=self.session_socket)
+        action_if_socket_released(
+            super().__init__, OSError, address=self.session_socket
+        )
 
         return self.response
 
