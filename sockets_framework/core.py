@@ -10,7 +10,7 @@ from typing import Any, Iterable, Optional, Tuple, Type
 logging.basicConfig(
     format="[%(levelname)s] [%(asctime)s] %(message)s",
     datefmt="%I:%M:%S",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 SIGENDSESSION = b"SIGENDSESSION"
 
@@ -68,7 +68,7 @@ class BaseServer(Listener):
                 try:
                     self.request = recv_from(address=self.last_accepted)
                 except ConnectionRefusedError as exception:
-                    logging.exception(exception)
+                    logging.warning(exception)
                     self.response = SIGENDSESSION
                 else:
                     logging.info(
