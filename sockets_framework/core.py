@@ -16,14 +16,19 @@ SIGENDSESSION = b"SIGENDSESSION"
 
 
 def recv_from(*args, **kwargs):
-    data = None
-    while not data:
+    data: Any = None
+    max_retries = 100
+    while not data and max_retries > 0:
         try:
             with Client(*args, **kwargs) as conn:
                 data = conn.recv()
         except ConnectionRefusedError:
+            max_retries -= 1
+            if max_retries == 0:
+                raise
             time.sleep(0.01)
-    return data
+        else:
+            return data
 
 
 class BaseServer(Listener):
@@ -60,26 +65,30 @@ class BaseServer(Listener):
                     self.last_accepted[1],
                 )
 
-                self.request = recv_from(address=self.last_accepted)
-
-                logging.info(
-                    "Accepted request %s from %s:%s",
-                    self.request,
-                    self.last_accepted[0],
-                    self.last_accepted[1],
-                )
-
-                self._set_response()
-
-                with self.accept() as conn:
+                try:
+                    self.request = recv_from(address=self.last_accepted)
+                except ConnectionRefusedError as exception:
+                    logging.exception(exception)
+                    self.response = SIGENDSESSION
+                else:
                     logging.info(
-                        "Sending response: %s to %s:%s",
-                        self.response,
+                        "Accepted request %s from %s:%s",
+                        self.request,
                         self.last_accepted[0],
                         self.last_accepted[1],
                     )
 
-                    conn.send((self.response, self.last_accepted))
+                    self._set_response()
+
+                    with self.accept() as conn:
+                        logging.info(
+                            "Sending response: %s to %s:%s",
+                            self.response,
+                            self.last_accepted[0],
+                            self.last_accepted[1],
+                        )
+
+                        conn.send((self.response, self.last_accepted))
 
             self.response = None
 

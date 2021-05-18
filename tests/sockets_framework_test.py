@@ -1,3 +1,4 @@
+import time
 from multiprocessing import Process
 from multiprocessing.context import AuthenticationError
 from unittest import TestCase
@@ -80,7 +81,7 @@ class TestClass01(TestCase):
             self.assertEqual(16, response)
 
     def test_case06(self):
-        """Querying function with no argiments"""
+        """Querying function with no arguments"""
         with Session(self.server_address) as client:
             response = client.commit("no_args_action")
         self.assertTrue(response)
@@ -116,3 +117,19 @@ class TestClass02(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.server_process.terminate()
+
+
+class TestClass03(TestCase):
+    """No server running"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.max_retries_time = 1.0
+
+    def test_case01(self):
+        start = time.time()
+        with self.assertRaises(ConnectionRefusedError):
+            with Session(("localhost", 3000)) as client:
+                client.commit("none")
+        end = time.time()
+        self.assertEqual(round(end - start, 1), self.max_retries_time)
