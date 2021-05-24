@@ -9,7 +9,7 @@ from typing import Any, Iterable, Optional, Tuple, Type
 
 logging.basicConfig(
     format="[%(levelname)s] [%(asctime)s] %(message)s",
-    datefmt="%I:%M:%S",
+    datefmt="%m/%d/%Y:%I:%M:%S",
     level=logging.INFO,
 )
 SIGENDSESSION: bytes = b"SIGENDSESSION"

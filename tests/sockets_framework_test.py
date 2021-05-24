@@ -1,4 +1,3 @@
-import time
 from multiprocessing import Process
 from multiprocessing.context import AuthenticationError
 from unittest import TestCase
