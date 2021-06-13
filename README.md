@@ -36,9 +36,9 @@ class MyServer(BaseServer):
     def hello(self, arg):
         return self.validate_hello(arg)
 
-		def validate_hello(self, arg: Any):
-		    if not isinstance(arg, str):
-		        return TypeError(arg)
+    def validate_hello(self, arg: Any):
+        if not isinstance(arg, str):
+            return TypeError(arg)
         return f"{self.hello} {arg}"
 ```
 
