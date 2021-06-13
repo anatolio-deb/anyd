@@ -18,9 +18,9 @@ from sockets_framework import BaseServer, expose
 
 class MyServer(BaseServer):
     hello = 'Hello'
-
+	
 	@expose
-    def hello(self, arg):
+	def hello(self, arg):
 		"""Method available to client"""
         return f"{self.hello} {arg}"
 ```
