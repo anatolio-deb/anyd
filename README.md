@@ -18,10 +18,9 @@ from sockets_framework import BaseServer, expose
 
 class MyServer(BaseServer):
     hello = 'Hello'
-	
-	@expose
-	def hello(self, arg):
-		"""Method available to client"""
+
+    @expose
+    def hello(self, arg):
         return f"{self.hello} {arg}"
 ```
 
@@ -33,16 +32,14 @@ from sockets_framework import BaseServer, expose
 class MyServer(BaseServer):
     hello = 'Hello'
 
-	@expose
+    @expose
     def hello(self, arg):
-		"""Method available to client"""
         return self.validate_hello(arg)
 
-	def validate_hello(self, arg: Any):
-		"""Method unavailable to client"""
-		if not isinstance(arg, str):
-				return TypeError(arg)
-			return f"{self.hello} {arg}"
+		def validate_hello(self, arg: Any):
+		    if not isinstance(arg, str):
+		        return TypeError(arg)
+        return f"{self.hello} {arg}"
 ```
 
 Those methods won't expose to the client API. When API endpoint returns an exception, it will be raised on the client side.
@@ -63,22 +60,22 @@ from sockets_framework import Session
 address = ('localhost', 4000)
 
 with Session(address) as client:
-	# you can pass keyword arguments to API request
+    # you can pass keyword arguments to API request
     response = client.commit("hello", arg="world")
-	# or the positional one's
+    # or the positional one's
     bob = client.commit("hello", "Bob")
-	# you can query different API endpoints per-session
-	client.commit("validate_hello", "hello") # NotImplementedError: validate_hello
+    # you can query different API endpoints per-session
+    client.commit("validate_hello", "hello") # NotImplementedError: validate_hello
 
 print(response) # Hello world
 print(bob) # Hello Bob
 
 with Session(address) as client:
-	# handling exception form the server's response
-	try:
-		client.commit("hello", 1) # TypeError: 1
-	except TypeError:
-		print("We are not greeting anyone but strings!")
+    # handling exception form the server's response
+    try:
+        client.commit("hello", 1) # TypeError: 1
+    except TypeError:
+        print("We are not greeting anyone but strings!")
 ```
 
 # Features
