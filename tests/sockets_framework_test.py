@@ -2,7 +2,7 @@ from multiprocessing import Process
 from multiprocessing.context import AuthenticationError
 from unittest import TestCase
 
-from sockets_framework import BaseServer, Session
+from sockets_framework import BaseServer, Session, expose
 
 
 class Server(BaseServer):
@@ -14,23 +14,21 @@ class Server(BaseServer):
 
     arg3 = 0
 
+    @expose
     def get_sum(self, arg1: int, arg2: int) -> int:
-        """Normal targeting method
-
-        Args:
-            arg1 (int): [description]
-            arg2 (int): [description]
-
-        Returns:
-            int: [description]
-        """
+        """Exposed method is available to client"""
         return arg1 + arg2 + self.arg3
 
-    def __str__(self) -> str:
-        """Should not be exposed"""
+    # def __str__(self) -> str:
+    #     """Should not be exposed"""
 
+    @expose
     def no_args_action(self):
         return True
+
+    def helper(self):
+        """Should not be available to the client"""
+        pass
 
 
 class TestClass01(TestCase):
@@ -40,7 +38,7 @@ class TestClass01(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        cls.server_address = ("localhost", 4000)
+        cls.server_address = ("localhost", 5000)
         cls.server = Server(cls.server_address)
         cls.server_process = Process(target=cls.server.start)
         cls.server_process.start()
@@ -60,18 +58,18 @@ class TestClass01(TestCase):
         self.assertEqual(3, response)
 
     def test_case03(self):
-        """Not implemented request"""
+        """Not exposed method request"""
         with self.assertRaises(NotImplementedError):
             with Session(self.server_address) as client:
-                client.commit("unimplemented_method")
+                client.commit("helper")
+
+    # def test_case04(self):
+    #     """Internal method request"""
+    #     with self.assertRaises(ValueError):
+    #         with Session(self.server_address) as client:
+    #             client.commit("__str__")
 
     def test_case04(self):
-        """Internal method request"""
-        with self.assertRaises(ValueError):
-            with Session(self.server_address) as client:
-                client.commit("__str__")
-
-    def test_case05(self):
         """Multiple requests per session"""
         with Session(self.server_address) as client:
             response = client.commit("get_sum", 2, 2)
@@ -79,7 +77,7 @@ class TestClass01(TestCase):
             response = client.commit("get_sum", 12, response)
             self.assertEqual(16, response)
 
-    def test_case06(self):
+    def test_case05(self):
         """Querying function with no arguments"""
         with Session(self.server_address) as client:
             response = client.commit("no_args_action")
@@ -93,7 +91,7 @@ class TestClass02(TestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
         cls.authkey = b"dog"
-        cls.server_address = ("localhost", 5000)
+        cls.server_address = ("localhost", 5001)
         cls.server = Server(cls.server_address, authkey=cls.authkey)
         cls.server_process = Process(target=cls.server.start)
         cls.server_process.start()

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import logging
 import time
 from multiprocessing.connection import Client, Listener
@@ -30,6 +29,7 @@ class BaseServer(Listener):
 
     response: Any = None
     request: Tuple[str][Iterable] = ()
+    api: dict = {}
 
     def start(self):
         """Starts the server instance, listens for incoming connections, \
@@ -94,19 +94,19 @@ class BaseServer(Listener):
             )
 
     def _set_response(self):
-        if self.request[0] in dir(self):
-            for name, link in inspect.getmembers(self, predicate=inspect.ismethod):
-                if name == self.request[0] and name not in dir(super):
-                    self.response = link(*self.request[1], **self.request[2])
-                    break
-                self.response = ValueError(
-                    f"The method name {self.request[0]} is unacceptable, "
-                    "consider renaming your method."
-                )
+        if self.request[0] in self.api.keys():
+            self.response = self.api[self.request[0]](
+                self, *self.request[1], **self.request[2]
+            )
         elif self.request[0] == SIGENDSESSION:
             self.response = SIGENDSESSION
         else:
             self.response = NotImplementedError(self.request[0])
+
+
+def expose(func):
+    BaseServer.api[func.__name__] = func
+    return func
 
 
 class _Client(Listener):
