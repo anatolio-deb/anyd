@@ -19,7 +19,7 @@ from sockets_framework import BaseServer, expose
 class MyServer(BaseServer):
     hello = 'Hello'
 
-		@expose
+    @expose
     def hello(self, arg):
         return f"{self.hello} {arg}"
 ```
