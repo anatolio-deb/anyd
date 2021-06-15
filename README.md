@@ -62,7 +62,7 @@ address = ('localhost', 4000)
 with Session(address) as client:
     # you can pass keyword arguments to API request
     response = client.commit("hello", arg="world")
-    # or the positional one's
+    # or the positional ones
     bob = client.commit("hello", "Bob")
     # you can query different API endpoints per-session
     try:
