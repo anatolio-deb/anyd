@@ -69,16 +69,13 @@ with Session(address) as client:
         client.commit("validate_hello", "hello")
     except NotImplementedError as ex:
         print(ex) # NotImplementedError: validate_hello
-
-print(response) # Hello world
-print(bob) # Hello Bob
-
-with Session(address) as client:
     # handling exception form the server's response
     try:
-        client.commit("hello", 1) # TypeError: 1
-    except TypeError:
-        print("We are not greeting anyone but strings!")
+        client.commit("hello", 1)
+    except TypeError as ex:
+        print(ex) # TypeError: 1
+print(response) # Hello world
+print(bob) # Hello Bob
 ```
 
 # Features
