@@ -1,8 +1,8 @@
 # Sockets Framework
 
-Sockets Framework will help you to implement an IPC server with your own functionality. It will also provide you with a ready-to-use client to query your server and getting responses from it.
+Sockets Framework will help you to create a custom daemon with an API accessible over sockets. It will also provide you with a ready-to-use client to query your server and getting responses from it.
 
-Define your server using `BaseServer`:
+Define a server using `BaseServer`:
 
 ```python
 from sockets_framework import BaseServer
@@ -11,7 +11,7 @@ class MyServer(BaseServer):
     hello = 'Hello'
 ```
 
-Use `@expose` decorator to expose your API to the client:
+Use `@expose` decorator to define an API endpoint for the client:
 
 ```python
 from sockets_framework import BaseServer, expose
@@ -42,7 +42,7 @@ class MyServer(BaseServer):
         return f"{self.hello} {arg}"
 ```
 
-Those methods won't expose to the client API. When API endpoint returns an exception, it will be raised on the client side.
+Those methods won't expose to the client's API. When API endpoint returns an exception, it will be raised on the client side.
 
 Start `MyServer`:
 
@@ -52,7 +52,7 @@ server = MyServer(address)
 server.start()
 ```
 
-You can query your server using a `Client` from another environment with `sockets-framework` installed:
+You can query your daemon using the `Session` from another environment with `sockets-framework` installed:
 
 ```python
 from sockets_framework import Session
@@ -65,7 +65,10 @@ with Session(address) as client:
     # or the positional one's
     bob = client.commit("hello", "Bob")
     # you can query different API endpoints per-session
-    client.commit("validate_hello", "hello") # NotImplementedError: validate_hello
+    try:
+        client.commit("validate_hello", "hello")
+    except NotImplementedError as ex:
+        print(ex) # NotImplementedError: validate_hello
 
 print(response) # Hello world
 print(bob) # Hello Bob
