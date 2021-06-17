@@ -1,6 +1,6 @@
 # Sockets Framework
 
-Sockets Framework will help you to create a custom daemon with an API accessible over sockets. It will also provide you with a ready-to-use client to communicate with your daemon and getting responses from it.
+Sockets Framework will help you to create a custom daemon with API accessible over sockets. It will also provide you with a ready-to-use client to communicate with your daemon and getting responses from it.
 
 Define a server using `BaseServer`:
 
