@@ -127,10 +127,10 @@ with Session(address) as client:
 
 # Installation
 
-Install Sockets Framework by running:
+Install it by running:
 
 ```
-pip install sockets-framework
+pip install anyd
 ```
 
 # Contribute
