@@ -138,11 +138,6 @@ pip install anyd
 - Issue Tracker: [github.com/anatolio-deb/anyd/issues](http://github.com/anatolio-deb/anyd/issues)
 - Source Code: [github.com/anatolio-deb/anyd](http://github.com/anatolio-deb/anyd)
 
-# Support
-
-If you are having issues, please let us know.
-We have a mailing list located at [sockets-framework@googlegroups.com](mailto:sockets-framework@googlegroups.com)
-
 # License
 
 The project is licensed under the BSD license.
