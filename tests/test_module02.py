@@ -2,7 +2,7 @@ from multiprocessing import Process
 from multiprocessing.context import AuthenticationError
 from unittest import TestCase
 
-from anyd import Appd, Session
+from anyd import Appd, ClientSession
 
 ADDRESS = ("localhost", 5001)
 AUTHKEY = b"dog"
@@ -29,14 +29,14 @@ class TestClass01(TestCase):
 
     def test_case02(self):
         """Normal request"""
-        with Session(ADDRESS, authkey=AUTHKEY) as client:
+        with ClientSession(ADDRESS, authkey=AUTHKEY) as client:
             response = client.commit("echo", "hello")
         self.assertEqual("hello", response)
 
     def test_case03(self):
         """Wrong authentication key"""
         with self.assertRaises(AuthenticationError):
-            with Session(ADDRESS, authkey=b"fish") as client:
+            with ClientSession(ADDRESS, authkey=b"fish") as client:
                 client.commit("echo", "hello")
 
     @classmethod
@@ -49,5 +49,5 @@ class TestClass03(TestCase):
 
     def test_case01(self):
         with self.assertRaises(ConnectionRefusedError):
-            with Session(("localhost", 3000)) as client:
+            with ClientSession(("localhost", 3000)) as client:
                 client.commit("echo", "hello")

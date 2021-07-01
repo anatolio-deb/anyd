@@ -1,7 +1,7 @@
 from multiprocessing import Process
 from unittest import TestCase
 
-from anyd import Appd, Session
+from anyd import Appd, ClientSession
 
 ADDRESS = ("localhost", 5000)
 appd = Appd(ADDRESS)
@@ -20,7 +20,7 @@ def no_args_action():
 
 class TestClass01(TestCase):
     """The main test for the unix_daemon_framework.core.BaseServer
-    and the unix_daemon_framework.core.Session"""
+    and the unix_daemon_framework.core.ClientSession"""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -38,25 +38,25 @@ class TestClass01(TestCase):
 
     def test_case02(self):
         """Normal request"""
-        with Session(ADDRESS) as client:
+        with ClientSession(ADDRESS) as client:
             response = client.commit("get_sum", 1, 2)
         self.assertEqual(3, response)
 
     # def test_case03(self):
     #     """Not exposed method request"""
     #     with self.assertRaises(NotImplementedError):
-    #         with Session(ADDRESS) as client:
+    #         with ClientSession(ADDRESS) as client:
     #             client.commit("helper")
 
     # def test_case04(self):
     #     """Internal method request"""
     #     with self.assertRaises(ValueError):
-    #         with Session(self.server_address) as client:
+    #         with ClientSession(self.server_address) as client:
     #             client.commit("__str__")
 
     def test_case03(self):
-        """Multiple requests per session"""
-        with Session(ADDRESS) as client:
+        """Multiple requests per Clientsession"""
+        with ClientSession(ADDRESS) as client:
             response = client.commit("get_sum", 2, 2)
             self.assertEqual(4, response)
             response = client.commit("get_sum", 12, response)
@@ -64,6 +64,6 @@ class TestClass01(TestCase):
 
     def test_case04(self):
         """Querying function with no arguments"""
-        with Session(ADDRESS) as client:
+        with ClientSession(ADDRESS) as client:
             response = client.commit("no_args_action")
         self.assertTrue(response)
