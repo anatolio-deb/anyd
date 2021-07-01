@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from multiprocessing.connection import Client, Listener
 from types import FunctionType
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 
 logging.basicConfig(
     format="[%(levelname)s] %(message)s",
@@ -33,13 +33,13 @@ class Appd(Listener):
         while True:
             local = f"{self.address[0]}:{self.address[1]}"
 
-            logging.info(f"[LST] -> {local}")
+            logging.info("[LST] -> %s", local)
 
             with self.accept() as conn:
 
                 remote = f"{self.last_accepted[0]}:{self.last_accepted[1]}"
 
-                logging.info(f"[SES] <- {remote}")
+                logging.info("[SES] <- %s", remote)
 
                 while self.response != SIGENDS:
                     try:
@@ -47,7 +47,7 @@ class Appd(Listener):
                     except EOFError:
                         break
 
-                    logging.info(f"[REQ] <- {remote} + {self.request}")
+                    logging.info("[REQ] <- %s + %s", remote, self.request)
 
                     if self.request[0] in self._api.keys():
                         self.response = self._api[self.request[0]](
@@ -59,22 +59,24 @@ class Appd(Listener):
                         self.response = NotImplementedError(self.request[0])
 
                     conn.send(self.response)
-                    
-                    logging.info(f"[RES] + {self.response} -> {remote}")
+
+                    logging.info("[RES] + %s -> %s", self.response, remote)
                 else:
                     self.response = None
-                
-                logging.info(f"[SES] x {remote}")
-                
-                
 
-    
+                logging.info("[SES] x %s", remote)
+
 
 class _Client:
     request: Tuple = ()
     response: Any = None
 
-    def __init__(self, address: Tuple, family: str = None, authkey: bytes = None):
+    def __init__(
+        self,
+        address: Union[str, Tuple[str, int]],
+        family: str = None,
+        authkey: bytes = None,
+    ):
         self.conn = Client(address, family, authkey)
 
     def commit(self, endpoint: str, *args, **kwargs) -> Any:
@@ -95,7 +97,7 @@ class _Client:
             raise self.response
 
         return self.response
-    
+
     def end_session(self):
         self.conn.send(SIGENDS)
         self.response = self.conn.recv()
@@ -106,13 +108,18 @@ class _Client:
         finally:
             self.conn.close()
 
+
 class ClientSession:
-    def __init__(self, address: Tuple, family: str = None, authkey: bytes = None):
+    def __init__(
+        self,
+        address: Union[str, Tuple[str, int]],
+        family: str = None,
+        authkey: bytes = None,
+    ):
         self.client = _Client(address, family, authkey)
 
     def __enter__(self):
         return self.client
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.client.end_session()
-
