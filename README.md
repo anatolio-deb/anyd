@@ -39,7 +39,7 @@ def echo(arg: str) -> str:
 Additionally, you can use built-in logger to log something specific:
 
 ```python
-from anyd import logger
+from anyd import logging
 
 @appd.api
 def echo(arg: str) -> str:
@@ -66,7 +66,7 @@ Let's test it from another shell!
 Start from importing  `Session`:
 
 ```python
-from sockets_framework import Session
+from anyd import Session
 ```
 
 Use it with address and authkey you used for your daemon:
