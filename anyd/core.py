@@ -68,6 +68,8 @@ class Appd(Listener):
 
 
 class _Client:
+    """Wraps multiprocessing.connection.Client"""
+
     request: Tuple = ()
     response: Any = None
 
@@ -110,6 +112,8 @@ class _Client:
 
 
 class ClientSession:
+    """A Context Manger for client"""
+
     def __init__(
         self,
         address: Union[str, Tuple[str, int]],
