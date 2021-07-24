@@ -63,10 +63,10 @@ That will block the interpreter and you'll see the logging output of your daemon
 
 Let's test it from another shell!
 
-Start from importing  `Session`:
+Start from importing  `ClientSession`:
 
 ```python
-from anyd import Session
+from anyd import ClientSession
 ```
 
 Use it with address and authkey you used for your daemon:
@@ -74,7 +74,7 @@ Use it with address and authkey you used for your daemon:
 ```python
 address = ('localhost', 3000)
 
-with Session(address, authkey=b"swordfish") as client:
+with ClientSession(address, authkey=b"swordfish") as client:
     # you can pass keyword arguments to API request
     response = client.commit("echo", arg="hello world!")
     # or the positional ones
@@ -112,7 +112,7 @@ The function `validate_echo` is not an API endpoint of our daemon, but still its
 Now, let's try to query it with wrong data:
 
 ```python
-with Session(address) as client:
+with ClientSession(address) as client:
     try:
         client.commit("echo", 1) # will raise TypeError
     except TypeError as ex:
