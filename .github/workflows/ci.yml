@@ -1,8 +1,7 @@
+name: Semantic Release
+
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -11,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: Set Up Python3.9
       uses: actions/setup-python@v2
       with:
@@ -21,15 +22,16 @@ jobs:
         pip install poetry
         poetry export -f requirements.txt --output requirements.txt
         pip install -r requirements.txt
-    - name: Lint with pylint
+    - name: Lint with Pylint
       run: |
         pip install pylint
         pylint --max-line-length=88 --disable=C0114,C0116 --notes= anyd/
-    - name: Test
+    - name: Test with Pytest
       run: |
         pip install pytest
         pytest -v
-    - name: Publish
-      run: |
-        poetry build
-        poetry publish --username anatolio --password ad.5319.93A
+    - name: Python Semantic Release
+      uses: relekang/python-semantic-release@master
+      with:
+        pypi_token: ${{ secrets.PYPI_TOKEN }}
+
