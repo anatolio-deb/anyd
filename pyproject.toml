@@ -49,3 +49,4 @@ version_toml = [
     'pyproject.toml:tool.poetry.version',
 ]
 branch = "main"
+build_command = "poetry publish --build"
