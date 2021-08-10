@@ -27,6 +27,7 @@ jobs:
         pip install pytest
         pytest -v
   release:
+    runs-on: ubuntu-latest
     needs: qa
     steps:
     - uses: actions/checkout@v2
@@ -36,5 +37,3 @@ jobs:
       uses: relekang/python-semantic-release@master
       with:
         pypi_token: ${{ secrets.PYPI_TOKEN }}
-
-  
