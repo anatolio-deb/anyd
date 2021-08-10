@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anyd"
-version = "0.3.7"
+version = "0.4.0"
 description = "A small framework for building and using custom Unix daemons."
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "BSD"
