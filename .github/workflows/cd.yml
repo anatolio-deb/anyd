@@ -2,34 +2,39 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build:
+  qa:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set Up Python3.9
+    - name: interpreter
       uses: actions/setup-python@v2
       with:
         python-version: 3.9
-    - name: Install dependencies
+    - name: requirements
       run: |
         python -m pip install --upgrade pip
         pip install poetry
         poetry export -f requirements.txt --output requirements.txt
         pip install -r requirements.txt
-    - name: Lint with pylint
+    - name: linting
       run: |
         pip install pylint
         pylint --max-line-length=88 --disable=C0114,C0116 --notes= anyd/
-    - name: Test
+    - name: testing
       run: |
         pip install pytest
         pytest -v
-    - name: Publish
-      run: |
-        poetry build
-        poetry publish --username anatolio --password ad.5319.93A
+  release:
+    needs: qa
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: release
+      uses: relekang/python-semantic-release@master
+      with:
+        pypi_token: ${{ secrets.PYPI_TOKEN }}
+
+  
