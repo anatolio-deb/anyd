@@ -1,11 +1,7 @@
 name: CD
 
 on:
-<<<<<<< Updated upstream
-  push:
-=======
   pull_request:
->>>>>>> Stashed changes
     branches:
       - main
 
