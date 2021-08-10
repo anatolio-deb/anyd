@@ -48,3 +48,4 @@ profile = "black"
 version_toml = [
     'pyproject.toml:tool.poetry.version',
 ]
+branch = "main"
