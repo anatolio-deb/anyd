@@ -34,4 +34,4 @@ jobs:
     - name: release
       run: |
         pip install poetry
-        poetry publish --build --username anatolio --password {{secret.PYPI_PASSWORD}}
+        poetry publish --build --username anatolio --password {{secrets.PYPI_PASSWORD}}
