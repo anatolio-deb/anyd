@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anyd"
-version = "0.4.0"
+version = "0.4.1"
 description = "A small framework for building and using custom Unix daemons."
 authors = ["Anatolio Nikiforidis <nikiforova693@gmail.com>"]
 license = "BSD"
@@ -25,7 +25,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.8"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -43,10 +43,3 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
-
-[tool.semantic_release]
-version_toml = [
-    'pyproject.toml:tool.poetry.version',
-]
-branch = "main"
-build_command = "poetry publish --build"
