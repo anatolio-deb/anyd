@@ -28,7 +28,7 @@ Or you can set it up with authentication for client:
 appd = Appd(address, authkey=b"swordfish")
 ```
 
-Now, define your API endpoints, using `@appd.api`:
+Now, define your daemon's API endpoints, using `@appd.api`:
 
 ```python
 @appd.api
@@ -36,7 +36,7 @@ def echo(arg: str) -> str:
     return arg
 ```
 
-Additionally, you can use built-in logger to log something specific:
+Additionally, you can use built-in logger:
 
 ```python
 from anyd import logging
@@ -47,7 +47,7 @@ def echo(arg: str) -> str:
     return arg
 ```
 
-This function is now exposed to the client as an API endpoint, and can be executed on request.
+This function is now exposed to the client as daemon's API endpoint. It can be called remotley from the client.
 
 You are ready to start the deamon:
 
@@ -55,7 +55,7 @@ You are ready to start the deamon:
 appd.start()
 ```
 
-That will block the interpreter and you'll see the logging output of your daemon in the terminal:
+This will block the interpreter and you'll see the logging output of your daemon in the terminal:
 
 ```
 [INFO] Listening on 127.0.0.1:3000
