@@ -1,6 +1,6 @@
 # Anyd
 
-Anyd is a small framework that will help you build and use *any* custom Unix *daemon* process as a server. It will suite your daemon with API accessible over sockets, so you can query it for running your code or transmit the data. Anyd provides you a client out-of-the-box, so you can start working with your daemon instantly.
+Anyd is a small framework that will help you build and use *any* custom Unix *daemon* process as a server. It will suite your daemon with API accessible over sockets, so you can query it for running your code remotely or transmit the data. Anyd provides you a client out-of-the-box, so you can start working with your daemon instantly.
 
 # How-to
 
